@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Mail-Foundry.t
+lib/Mail/Foundry.pm
+META.yml                                 Module meta-data (added by MakeMaker)
+eg/mailfoundry

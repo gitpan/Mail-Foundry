@@ -1,0 +1,33 @@
+Mail-Foundry version 0.08
+=========================
+
+Mail::Foundry creates an API for MailFoundry servers using LWP to
+authenticate and post form data.
+
+This module is no longer actively maintained. Only working patches
+will be accepted for maintenance.
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+  LWP
+  URI::Escape
+  HTML::Form
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2006 by Scott Wiersdorf
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.5 or,
+at your option, any later version of Perl 5 you may have available.

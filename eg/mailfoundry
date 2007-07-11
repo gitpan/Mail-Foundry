@@ -1,0 +1,159 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+## Scott Wiersdorf
+## Created: Fri Sep 22 09:10:00 MDT 2006
+## $Id: mailfoundry,v 1.1 2006/11/08 21:42:12 scott Exp $
+
+## edit the mailfoundry settings for a domain
+use lib 'Mail-Foundry/lib';
+use lib 'lib';
+use Mail::Foundry;
+use Getopt::Long;
+
+my %opt = ();
+
+GetOptions( \%opt,
+	    'action=s',
+	    'status=s',
+	    'act=s',
+	    'modsub=s',
+
+	    'domain=s',
+	    'mailhost=s',
+
+	    'username=s',
+	    'password=s',
+	    'firstname=s',
+	    'lastname=s',
+
+	    'redir_email=s',
+
+	    'notify_sender=i',
+	    'tell_me=i',	    
+
+	    'quiet',
+	    )
+    && $opt{action}
+or die "Usage: mailfoundry --action=[add|delete] --domain=domain.tld [--mailhost=phys.server.tld]\n";
+
+my $foundry = 'mailfoundry.example.com';
+
+my $mf = new Mail::Foundry(foundry => $foundry,
+			   username => 'robotaccount',
+			   password => 'robotpassword');
+
+$mf->connect()
+    or die "Could not connect to server: " . join(' ', $mf->errors) . "\n";
+
+if( $opt{action} eq 'add' ) {
+    $mf->add_domain(domain => $opt{domain},
+		    server => $opt{mailhost})
+	or do {
+	    die "Errors: " . join(' ', $mf->errors) . "\n";
+	};
+    print "Domain '$opt{domain}' was successfully added.\n" unless $opt{quiet};
+}
+
+elsif( $opt{action} eq 'delete' ) {
+    $mf->delete_domain(domain => $opt{domain})
+	or do {
+	    die "Errors: " . join(' ', $mf->errors) . "\n";
+	};
+
+    print "Domain '$opt{domain}' was successfully deleted.\n" unless $opt{quiet};
+}
+
+elsif( $opt{action} eq 'add_user' ) {
+    $mf->add_user( username => $opt{username}, password => $opt{password},
+		   domain   => $opt{domain}, firstname => $opt{firstname},
+		   lastname => $opt{lastname} )
+	or do {
+	    die "Errors: " . join(' ', $mf->errors) . "\n";
+	};
+
+    print "New user '$opt{username}' was successfully added.\n" unless $opt{quiet};
+}
+
+elsif( $opt{action} eq 'delete_user' ) {
+    $mf->delete_user( username => $opt{username} )
+	or do {
+	    die "Errors: " . join(' ', $mf->errors) . "\n";
+	};
+
+    print "User '$opt{username}' was successfully deleted.\n" unless $opt{quiet};
+}
+
+elsif( $opt{action} eq 'spam' ) {
+    my %args = ();
+
+    $args{spam_status} = $opt{status}      if exists $opt{status};
+    $args{spam_act}    = $opt{act}         if exists $opt{act};
+    $args{s_modsub}    = $opt{modsub}      if exists $opt{modsub};
+    $args{redir_email} = $opt{redir_email} if exists $opt{redir_email};
+
+    (%args ? (my $ret) : (my %settings)) = $mf->spam_settings((domain => $opt{domain}), %args)
+	or die "Errors: " . join(' ', $mf->errors) . "\n";
+
+    unless( %args ) {
+	print "Anti-Spam Settings:\n";
+	for my $set ( keys %settings ) {
+	    print "$set: $settings{$set}\n";
+	}
+	exit;
+    }
+
+    print "Domain '$opt{domain}' spam settings successfully changed.\n" unless $opt{quiet};
+}
+
+elsif( $opt{action} eq 'virus' ) {
+    my %args = ();
+
+    $args{virus_status}  = $opt{status}        if exists $opt{status};
+    $args{virus_act}     = $opt{act}           if exists $opt{act};
+    $args{v_modsub}      = $opt{modsub}        if exists $opt{modsub};
+    $args{notify_sender} = $opt{notify_sender} if exists $opt{notify_sender};
+    $args{tell_me}       = $opt{tell_me}       if exists $opt{tell_me};
+
+    (%args ? (my $ret) : (my %settings)) = $mf->virus_settings((domain => $opt{domain}), %args)
+	or die "Errors: " . join(' ', $mf->errors) . "\n";
+
+    unless( %args ) {
+	print "Anti-Virus Settings:\n";
+	for my $set ( keys %settings ) {
+	    print "$set: $settings{$set}\n";
+	}
+	exit;
+    }
+
+    print "Domain '$opt{domain}' virus settings successfully changed.\n" unless $opt{quiet};
+}
+
+elsif( $opt{action} eq 'smtp' ) {
+    my %args = ();
+
+    $args{smtp_act}      = $opt{smtp_act}      if exists $opt{smtp_act};
+    $args{smtp_server}   = $opt{smtp_server}   if exists $opt{smtp_server};
+    $args{smtp_port}     = $opt{smtp_port}     if exists $opt{smtp_port};
+    $args{smtp_priority} = $opt{smtp_priority} if exists $opt{smtp_priority};
+
+    (%args ? (my $ret) : (my @servers)) = $mf->smtp_settings((domain => $opt{domain}), %args)
+	or die "Errors: " . join(' ', $mf->errors) . "\n";
+
+    unless( %args ) {
+	print "SMTP Servers for $opt{domain}\n";
+	printf("%-25s\t%s\t%s\n", "hostname", "port", "priority");
+	printf("%-25s\n", "=" x 48);
+
+	for my $srv ( @servers ) {
+	    printf("%-25s\t%-5d\t%d\n", $srv->{server}, $srv->{port}, $srv->{priority});
+	}
+	print "\n";
+	exit;
+    }
+
+    print "Domain '$opt{domain}' SMTP settings successfully changed.\n" unless $opt{quiet};
+}
+
+exit;
